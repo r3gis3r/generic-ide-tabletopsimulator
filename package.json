@@ -1,0 +1,6 @@
+{
+  "license": "MIT",
+  "dependencies": {
+    "luabundler": "^1.2.2"
+  }
+}
