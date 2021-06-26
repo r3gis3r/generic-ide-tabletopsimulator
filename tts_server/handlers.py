@@ -36,8 +36,9 @@ def _handle_load_new_game(message: dict, *_, export_dir=None, **__):
                 if data and key == "script":
                     data = unbundle(data)
                 filename = get_export_filename(item, key=key)
-
-                with open(os.path.join(export_dir, filename), "w") as fp:
+                if isinstance(data, str):
+                    data = data.encode("utf-8")
+                with open(os.path.join(export_dir, filename), "wb") as fp:
                     fp.write(data or "")
     # log.info("Should load game %s in %s", message, project_dir)
 
