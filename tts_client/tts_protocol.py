@@ -2,9 +2,14 @@ import asyncio
 import json
 import logging
 import os
+import time
 from functools import partial
 
-from tts_folder.export_dir import get_script_state_path, get_export_filename
+from tts_folder.export_dir import (
+    get_script_state_path,
+    get_export_filename,
+    RELOAD_FILE,
+)
 from tts_lua.luabundler import bundle
 
 log = logging.getLogger("ttsclient")
@@ -59,15 +64,36 @@ def request_command_error(command=None, *_, **__):
 REQUESTS_COMMANDS = {"push": request_command_push, "pull": request_command_pull}
 
 
+async def wait_for_file(file_path, sleep_step=0.2, max_sleep=40):
+    tref = time.time()
+    while not os.path.exists(file_path):
+        await asyncio.sleep(sleep_step)
+        if time.time() > tref + max_sleep:
+            break
+    if os.path.exists(file_path):
+        with open(file_path, "r") as fp:
+            log.info("Reload done at %s", fp.read())
+    else:
+        log.info("Wait timeout after %s sec", max_sleep)
+
 async def tts_query(command, host="localhost", port=39999, **kwargs):
     reader, writer = await asyncio.open_connection(host=host, port=port)
     request_func = REQUESTS_COMMANDS.get(
         command, partial(request_command_error, command=command)
     )
+    export_dir = kwargs.get("export_dir")
+    wait_file_path = None
+    if command == "pull" and export_dir:
+        wait_file_path = os.path.join(export_dir, RELOAD_FILE)
+        os.remove(wait_file_path)
+
     message = request_func(**kwargs)
     writer.write(json.dumps(message).encode())
     await writer.drain()
 
-    print("Close the connection")
+    log.debug("Close the connection")
     writer.close()
     await writer.wait_closed()
+
+    if wait_file_path:
+        await wait_for_file(wait_file_path)

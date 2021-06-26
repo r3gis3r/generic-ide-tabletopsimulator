@@ -50,7 +50,7 @@ def unbundle_file(filepath):
     out = subprocess.run(command, capture_output=True)
     if out.returncode != 0:
         log.error(out.stderr)
-        return data
+        return None
     else:
         return out.stdout
 

@@ -29,6 +29,9 @@ def _get_argparser():
         default=False,
         required=False,
     )
+    parser.add_argument(
+        "--libdir", help="Path to search for ttslua libs", action="append"
+    )
 
     parser.add_argument(
         "-v", "--verbose", help="increase output verbosity", action="store_true"
@@ -48,4 +51,4 @@ if __name__ == "__main__":
         yarn_check_install()
 
     logging.debug("Starting")
-    asyncio.run(tts_query(args.command, export_dir=args.output_dir))
+    asyncio.run(tts_query(args.command, export_dir=args.output_dir, lib_dirs=args.libdir))

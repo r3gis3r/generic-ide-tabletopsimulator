@@ -45,7 +45,7 @@ async def handle_request(client_reader, client_writer, **kwargs):
             log.info("Retrieve error %s", data_cache, exc_info=e)
 
 
-async def tts_serve(host=None, port=39998, export_dir=None):
+async def tts_serve(host=None, port=39998, export_dir=None, **kwargs):
     if export_dir:
         export_dir_ctxt = contextlib.nullcontext(export_dir)
     else:
@@ -53,7 +53,7 @@ async def tts_serve(host=None, port=39998, export_dir=None):
 
     with export_dir_ctxt as out_dir:
         server = await asyncio.start_server(
-            partial(accept_client, export_dir=out_dir),
+            partial(accept_client, export_dir=out_dir, **kwargs),
             host=host,
             port=port,
             limit=10 * 1024 * 1024,

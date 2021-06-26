@@ -2,9 +2,11 @@ import glob
 import json
 import logging
 import os
+import tempfile
+import time
 
-from tts_folder.export_dir import get_script_state_path, get_export_filename
-from tts_lua.luabundler import unbundle, unbundle_file
+from tts_folder.export_dir import get_script_state_path, get_export_filename, RELOAD_FILE
+from tts_lua.luabundler import unbundle_file
 
 log = logging.getLogger("ttshandler")
 
@@ -19,32 +21,45 @@ def _handle_load_new_game(message: dict, *_, export_dir=None, **__):
         return
     script_states = message.get("scriptStates")
     if script_states:
-        # Clean folder
-        for f in glob.glob(os.path.join(export_dir, "*")):
-            os.remove(f)
-        # Save raw state
         script_states_save = get_script_state_path(export_dir=export_dir)
+        # Clean folder - only if one script save found
+        if os.path.exists(script_states_save):
+            for f in glob.glob(os.path.join(export_dir, "*")):
+                os.remove(f)
+        # Save raw state
         with open(script_states_save, "w") as fp:
             json.dump(script_states, fp, indent=4)
         # Save each file
-        for item in script_states:
-            for extension, key in [("ttslua", "script"), ("xml", "ui")]:
-                if not item.get(key):
-                    continue
+        with tempfile.TemporaryDirectory(prefix="tts_") as tmpdir:
+            for item in script_states:
+                for extension, key in [("ttslua", "script"), ("xml", "ui")]:
+                    if not item.get(key):
+                        continue
 
-                data = item[key]
-                filename = get_export_filename(item, key=key)
-                if isinstance(data, str):
-                    data = data.encode("utf-8")
-                target_file = os.path.join(export_dir, filename)
-                with open(target_file, "wb") as fp:
-                    fp.write(data or "")
+                    data = item[key]
+                    if isinstance(data, str):
+                        data = data.encode("utf-8")
+                    data = data or ""
 
-                if data and key == "script":
-                    data = unbundle_file(target_file)
+                    # Final file name
+                    filename = get_export_filename(item, key=key)
 
-                with open(target_file, "wb") as fp:
-                    fp.write(data or "")
+                    # In case of script, unbundle it through temp dir
+                    if data and key == "script":
+                        temp_target_file = os.path.join(tmpdir, filename)
+                        with open(temp_target_file, "wb") as fp:
+                            fp.write(data)
+                        new_data = unbundle_file(temp_target_file)
+                        if new_data:
+                            data = new_data
+
+                    # Export the final file
+                    target_file = os.path.join(export_dir, filename)
+                    with open(target_file, "wb") as fp:
+                        fp.write(data or "")
+        reload_path = os.path.join(export_dir, RELOAD_FILE)
+        with open(reload_path, "w") as fp:
+            fp.write(str(time.time()))
 
     # log.info("Should load game %s in %s", message, project_dir)
 
