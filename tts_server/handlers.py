@@ -3,6 +3,7 @@ import json
 import logging
 import os
 
+from tts_folder.export_dir import get_script_state_path, get_export_filename
 from tts_lua.luabundler import unbundle
 
 log = logging.getLogger("ttshandler")
@@ -22,7 +23,7 @@ def _handle_load_new_game(message: dict, *_, export_dir=None, **__):
         for f in glob.glob(os.path.join(export_dir, "*")):
             os.remove(f)
         # Save raw state
-        script_states_save = os.path.join(export_dir, "scriptStates.json")
+        script_states_save = get_script_state_path(export_dir=export_dir)
         with open(script_states_save, "w") as fp:
             json.dump(script_states, fp, indent=4)
         # Save each file
@@ -32,14 +33,12 @@ def _handle_load_new_game(message: dict, *_, export_dir=None, **__):
                     continue
 
                 data = item[key]
-                if extension == "ttslua":
+                if data and key == "script":
                     data = unbundle(data)
-                filename = "{name}-{guid}.{extension}".format(
-                    **item, extension=extension
-                )
+                filename = get_export_filename(item, key=key)
 
                 with open(os.path.join(export_dir, filename), "w") as fp:
-                    fp.write(data)
+                    fp.write(data or "")
     # log.info("Should load game %s in %s", message, project_dir)
 
 

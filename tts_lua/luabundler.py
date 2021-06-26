@@ -1,5 +1,8 @@
 import os
 import subprocess
+import logging
+
+log = logging.getLogger(__name__)
 
 
 def get_binary():
@@ -27,7 +30,7 @@ def bundle(source_file, include_folders=None):
         )
     out = subprocess.run(command, capture_output=True)
     if out.returncode != 0:
-        print(f"{out.stderr.decode()}")
+        log.error(out.stderr)
     else:
         return out.stdout
 
@@ -36,7 +39,8 @@ def unbundle(data):
     command = [get_binary(), "unbundle"]
     out = subprocess.run(command, capture_output=True, input=data, encoding="utf-8")
     if out.returncode != 0:
-        print(f"{out.stderr.decode()}")
+        log.error(out.stderr)
+        return data
     else:
         return out.stdout
 
