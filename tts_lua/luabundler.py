@@ -45,6 +45,16 @@ def unbundle(data):
         return out.stdout
 
 
+def unbundle_file(filepath):
+    command = [get_binary(), "unbundle", filepath]
+    out = subprocess.run(command, capture_output=True)
+    if out.returncode != 0:
+        log.error(out.stderr)
+        return data
+    else:
+        return out.stdout
+
+
 if __name__ == "__main__":
     bundle(
         "/home/r3gis3r/Dev/tts_squad_tactics/miniature/Miniature.ttslua",

@@ -4,7 +4,7 @@ import logging
 import os
 
 from tts_folder.export_dir import get_script_state_path, get_export_filename
-from tts_lua.luabundler import unbundle
+from tts_lua.luabundler import unbundle, unbundle_file
 
 log = logging.getLogger("ttshandler")
 
@@ -33,13 +33,19 @@ def _handle_load_new_game(message: dict, *_, export_dir=None, **__):
                     continue
 
                 data = item[key]
-                if data and key == "script":
-                    data = unbundle(data)
                 filename = get_export_filename(item, key=key)
                 if isinstance(data, str):
                     data = data.encode("utf-8")
-                with open(os.path.join(export_dir, filename), "wb") as fp:
+                target_file = os.path.join(export_dir, filename)
+                with open(target_file, "wb") as fp:
                     fp.write(data or "")
+
+                if data and key == "script":
+                    data = unbundle_file(target_file)
+
+                with open(target_file, "wb") as fp:
+                    fp.write(data or "")
+
     # log.info("Should load game %s in %s", message, project_dir)
 
 
