@@ -8,16 +8,17 @@ from functools import partial
 from tts_folder.export_dir import (
     get_script_state_path,
     get_export_filename,
-    RELOAD_FILE,
+    RELOAD_FILE, get_libs_dirs,
 )
 from tts_lua.luabundler import bundle
 
 log = logging.getLogger("ttsclient")
 
 
-def request_command_push(*_, export_dir=None, **__):
+def request_command_push(*_, export_dir=None, lib_dirs=None, **__):
     state_file = get_script_state_path(export_dir=export_dir)
     script_states = []
+    lib_dirs = get_libs_dirs(lib_dirs)
     with open(state_file, "r") as fp:
         old_script_states = json.load(fp)
     for item in old_script_states:
@@ -35,18 +36,12 @@ def request_command_push(*_, export_dir=None, **__):
             if key == "script":
                 data = bundle(
                     new_filepath,
-                    include_folders=[
-                        os.path.join(
-                            os.path.expanduser("~"), "Documents", "Tabletop Simulator"
-                        )
-                    ],
+                    include_folders=lib_dirs,
                 )
                 data = data.decode()
             else:
                 with open(new_filepath) as fp:
                     data = fp.read()
-            print(key)
-            print(data)
             new_item[key] = data
         script_states.append(new_item)
     log.info("Requesting push")
@@ -75,6 +70,7 @@ async def wait_for_file(file_path, sleep_step=0.2, max_sleep=40):
             log.info("Reload done at %s", fp.read())
     else:
         log.info("Wait timeout after %s sec", max_sleep)
+
 
 async def tts_query(command, host="localhost", port=39999, **kwargs):
     reader, writer = await asyncio.open_connection(host=host, port=port)
