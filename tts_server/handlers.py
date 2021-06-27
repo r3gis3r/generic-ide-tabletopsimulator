@@ -9,7 +9,8 @@ import time
 from tts_folder.export_dir import (
     get_script_state_path,
     get_export_filename,
-    RELOAD_FILE, get_libs_dirs,
+    RELOAD_FILE,
+    get_libs_dirs,
 )
 from tts_lua.luabundler import unbundle_file
 
@@ -93,7 +94,7 @@ def _handle_error(message: dict, *_, export_dir=None, lib_dirs=None, **__):
         log.error("Not found error %s", message)
         return
     item = guid_states[0]
-    error_str = message.get('error')
+    error_str = message.get("error")
     row = 0
     column = 0
     row_string = re.match(r".*:\(([0-9]+),([^)]+)\):.*", error_str)
@@ -118,8 +119,9 @@ def _handle_error(message: dict, *_, export_dir=None, lib_dirs=None, **__):
                     script_path = candidate_path
                     break
             break
-    print(f"{script_path}:{row}:{column} [ERROR] {error_str} CODE: {interesting_line.strip()}")
-
+    print(
+        f"{script_path}:{row}:{column} [ERROR] {error_str} CODE: {interesting_line.strip()}"
+    )
 
 
 def _handle_default(message: dict, *_, **__):
