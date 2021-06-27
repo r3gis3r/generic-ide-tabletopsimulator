@@ -50,7 +50,6 @@ if __name__ == "__main__":
     if not args.dont_check_yarn:
         yarn_check_install()
 
-    print(f"Processing command {args.command}")
     asyncio.run(
         tts_query(args.command, export_dir=args.output_dir, lib_dirs=args.libdir)
     )

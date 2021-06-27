@@ -12,7 +12,10 @@ from tts_folder.export_dir import (
     RELOAD_FILE,
     get_libs_dirs,
 )
+from tts_lua.constants import TTS_MSG_PUSH_NEW_OBJECT, TTS_MSG_LOAD_NEW_GAME, TTS_MSG_PRINT, TTS_MSG_ERROR, \
+    TTS_MSG_SAVE, TTS_IDE_MSG_PROGRESS
 from tts_lua.luabundler import unbundle_file
+from tts_server.progress_bar import print_progress_bar
 
 log = logging.getLogger("ttshandler")
 
@@ -136,12 +139,17 @@ def _handle_save(message: dict, *_, **__):
     log.info("TTS saves %s", message.get("savePath"))
 
 
+def _handle_progress(message: dict, *_, **__):
+    print_progress_bar(**message)
+
+
 MESSAGES_HANDLERS = {
-    0: _handle_push_new_object,
-    1: _handle_load_new_game,
-    2: _handle_print,
-    3: _handle_error,
-    6: _handle_save,
+    TTS_MSG_PUSH_NEW_OBJECT: _handle_push_new_object,
+    TTS_MSG_LOAD_NEW_GAME: _handle_load_new_game,
+    TTS_MSG_PRINT: _handle_print,
+    TTS_MSG_ERROR: _handle_error,
+    TTS_MSG_SAVE: _handle_save,
+    TTS_IDE_MSG_PROGRESS: _handle_progress
 }
 
 

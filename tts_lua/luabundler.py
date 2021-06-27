@@ -1,6 +1,8 @@
+import asyncio
 import os
 import subprocess
 import logging
+import time
 
 log = logging.getLogger(__name__)
 
@@ -16,9 +18,32 @@ def get_binary():
     )
 
 
-def bundle(source_file, include_folders=None):
+async def run(cmd, collect_cb=None):
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        limit=1024 * 1024 * 10
+    )
+
+    stdout, stderr = await proc.communicate()
+
+    result = None
+    success = False
+    if proc.returncode != 0:
+        log.error(proc.stderr.decode())
+    else:
+        success = True
+        result = stdout
+    if collect_cb:
+        await collect_cb(success)
+    return result
+
+
+async def bundle(source_file, include_folders=None, bundle_cb=None):
     include_folders = include_folders or []
     command = [get_binary(), "bundle", source_file]
+    log.debug("Bundle %s", source_file)
     for folder in include_folders:
         command.extend(
             [
@@ -28,11 +53,9 @@ def bundle(source_file, include_folders=None):
                 os.path.join(folder, "?.lua"),
             ]
         )
-    out = subprocess.run(command, capture_output=True)
-    if out.returncode != 0:
-        log.error(out.stderr)
-    else:
-        return out.stdout
+    bundle_res = await run(command, collect_cb=bundle_cb)
+    log.debug("Done %s", source_file)
+    return bundle_res
 
 
 def unbundle(data):
@@ -53,12 +76,3 @@ def unbundle_file(filepath):
         return None
     else:
         return out.stdout
-
-
-if __name__ == "__main__":
-    bundle(
-        "/home/r3gis3r/Dev/tts_squad_tactics/miniature/Miniature.ttslua",
-        include_folders=[
-            os.path.join(os.path.expanduser("~"), "Documents", "Tabletop Simulator")
-        ],
-    )

@@ -28,10 +28,11 @@ def accept_client(client_reader, client_writer, **kwargs):
 async def handle_request(client_reader, client_writer, **kwargs):
     # send a hello to let the client know they are connected
     data_cache = ""
-    # log.debug("Start handling client")
+    log.debug("Start handling client")
     while True:
         # wait for input from client
         data = await asyncio.wait_for(client_reader.readline(), timeout=10.0)
+        # log.info("Has data %s", data)
         if not data:
             break
         data_cache += data.decode()

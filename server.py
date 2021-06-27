@@ -1,11 +1,16 @@
+# coding: utf-8
+
 import asyncio
 import logging
 import os
 import argparse
+import sys
 
 from tts_lua.yarn_installer import yarn_check_install
 from tts_server import tts_serve
 
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
 
 def _get_argparser():
     parser = argparse.ArgumentParser(description="Tabletop Simulator Dev server")
@@ -33,6 +38,10 @@ def _get_argparser():
 
 
 if __name__ == "__main__":
+
+    # sys.stdin.reconfigure(encoding='utf-8')
+    # sys.stdout.reconfigure(encoding='utf-8')
+
     parser = _get_argparser()
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
