@@ -73,7 +73,6 @@ async def request_command_push(
 
     all_tasks = []
     for item in old_script_states:
-        new_item = item.copy()
         for key in keys_to_process:
             new_filename = get_export_filename(item, key=key)
             new_filepath = os.path.join(export_dir, new_filename)
@@ -87,7 +86,7 @@ async def request_command_push(
             if key == "script":
                 all_tasks.append(
                     fill_bundle_script_item(
-                        new_item,
+                        item,
                         key,
                         new_filepath=new_filepath,
                         include_folders=lib_dirs,
@@ -98,8 +97,8 @@ async def request_command_push(
                 with open(new_filepath) as fp:
                     data = fp.read()
                 await progress_cb(True)
-                new_item[key] = data
-        script_states.append(new_item)
+                item[key] = data
+        script_states.append(item)
     await asyncio.gather(*all_tasks)
     log.info("Requesting push")
     await _command_progress(
@@ -108,6 +107,10 @@ async def request_command_push(
         total=progress_len,
         suffix=f" sending",
     )
+    # Fill new script state in script state file
+    with open(state_file, "w") as fp:
+        json.dump(old_script_states, fp, indent=4)
+
     return {"messageID": 1, "scriptStates": script_states}
 
 
