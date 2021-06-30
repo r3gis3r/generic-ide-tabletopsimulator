@@ -12,8 +12,14 @@ from tts_folder.export_dir import (
     RELOAD_FILE,
     get_libs_dirs,
 )
-from tts_lua.constants import TTS_MSG_PUSH_NEW_OBJECT, TTS_MSG_LOAD_NEW_GAME, TTS_MSG_PRINT, TTS_MSG_ERROR, \
-    TTS_MSG_SAVE, TTS_IDE_MSG_PROGRESS
+from tts_lua.constants import (
+    TTS_MSG_PUSH_NEW_OBJECT,
+    TTS_MSG_LOAD_NEW_GAME,
+    TTS_MSG_PRINT,
+    TTS_MSG_ERROR,
+    TTS_MSG_SAVE,
+    TTS_IDE_MSG_PROGRESS,
+)
 from tts_lua.luabundler import unbundle_file
 from tts_server.progress_bar import print_progress_bar
 
@@ -25,10 +31,34 @@ def _handle_push_new_object(message: dict, export_dir=None, *_, **__):
         log.info("Ignore file load since export dir not set")
         return
     script_states = message.get("scriptStates", []) or []
+    script_states_save = get_script_state_path(export_dir=export_dir)
+    existing_script_states = None
+    existing_script_by_guid = {}
+    if os.path.exists(script_states_save):
+        try:
+            with open(script_states_save, "rb") as fp:
+                existing_script_states = json.load(fp)
+            existing_script_by_guid = {
+                it["guid"]: it for it in existing_script_states
+            }
+        except:
+            log.error("Failed to reload script states", exc_info=True)
+
+    _import_script_states(script_states, export_dir=export_dir, create_empty_files=True)
+
     for item in script_states:
         script_name = get_export_filename(item, key="script")
         script_path = os.path.join(export_dir, script_name)
         print(f"{script_path}:0:1 : open requested by TabletopSimulator")
+        if existing_script_states:
+            if item["guid"] in existing_script_by_guid:
+                existing_script_by_guid[item["guid"]] = item
+            else:
+                existing_script_states.append(item)
+
+    if existing_script_states:
+        with open(script_states_save, "w") as fp:
+            json.dump(existing_script_states, fp, indent=4)
 
 
 def _handle_load_new_game(message: dict, *_, export_dir=None, **__):
@@ -46,38 +76,44 @@ def _handle_load_new_game(message: dict, *_, export_dir=None, **__):
         with open(script_states_save, "w") as fp:
             json.dump(script_states, fp, indent=4)
         # Save each file
-        with tempfile.TemporaryDirectory(prefix="tts_") as tmpdir:
-            for item in script_states:
-                for extension, key in [("ttslua", "script"), ("xml", "ui")]:
-                    if not item.get(key):
-                        continue
-
-                    data = item[key]
-                    if isinstance(data, str):
-                        data = data.encode("utf-8")
-                    data = data or ""
-
-                    # Final file name
-                    filename = get_export_filename(item, key=key)
-
-                    # In case of script, unbundle it through temp dir
-                    if data and key == "script":
-                        temp_target_file = os.path.join(tmpdir, filename)
-                        with open(temp_target_file, "wb") as fp:
-                            fp.write(data)
-                        new_data = unbundle_file(temp_target_file)
-                        if new_data:
-                            data = new_data
-
-                    # Export the final file
-                    target_file = os.path.join(export_dir, filename)
-                    with open(target_file, "wb") as fp:
-                        fp.write(data or "")
+        _import_script_states(script_states, export_dir)
         reload_path = os.path.join(export_dir, RELOAD_FILE)
         with open(reload_path, "w") as fp:
             fp.write(str(time.time()))
         log.info("Reload files complete")
     # log.info("Should load game %s in %s", message, project_dir)
+
+
+def _import_script_states(script_states, export_dir, create_empty_files=False):
+    with tempfile.TemporaryDirectory(prefix="tts_") as tmpdir:
+        for item in script_states:
+            for extension, key in [("ttslua", "script"), ("xml", "ui")]:
+                data = item.get(key)
+                dont_create = not data
+                if create_empty_files:
+                    dont_create = data is None
+                if dont_create:
+                    continue
+
+                if isinstance(data, str):
+                    data = data.encode("utf-8")
+                data = data or b""
+
+                # Final file name
+                filename = get_export_filename(item, key=key)
+
+                # In case of script, unbundle it through temp dir
+                if data and key == "script":
+                    temp_target_file = os.path.join(tmpdir, filename)
+                    with open(temp_target_file, "wb") as fp:
+                        fp.write(data)
+                    new_data = unbundle_file(temp_target_file)
+                    if new_data:
+                        data = new_data
+                # Export the final file
+                target_file = os.path.join(export_dir, filename)
+                with open(target_file, "wb") as fp:
+                    fp.write(data)
 
 
 def _handle_print(message: dict, *_, **__):
@@ -149,7 +185,7 @@ MESSAGES_HANDLERS = {
     TTS_MSG_PRINT: _handle_print,
     TTS_MSG_ERROR: _handle_error,
     TTS_MSG_SAVE: _handle_save,
-    TTS_IDE_MSG_PROGRESS: _handle_progress
+    TTS_IDE_MSG_PROGRESS: _handle_progress,
 }
 
 
