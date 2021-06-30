@@ -68,7 +68,7 @@ The command looks like that :
 ```
 python command.py --output-dir path_to_your_project/fromtts --command pull
 ```
-#### Pycharm config sample :
+#### IntelliJ / Pycharm config sample :
 You'll create again an external tool as made in the server step.   
 This time configuration should be :
    * Name : TTS Pull
@@ -102,7 +102,7 @@ The command looks like that :
 ```
 python command.py --output-dir path_to_your_project/fromtts --command push
 ```
-#### Pycharm config
+#### IntelliJ / Pycharm config
 Same as for pull, but replace `pull` with `push` in the command line
 
 ### Snippet exec
@@ -121,7 +121,7 @@ The command looks like that :
 python lua_snippet_runner.py --output-dir path_to_your_project/fromtts --file <filepath>
 ```
 
-#### Pycharm config
+#### IntelliJ / Pycharm config
 Same as above to create a new entry. We take benefit of the Pycharm macro to pass the file path automatically for the one open.
 
    * Name : TTS Run snippet
@@ -143,3 +143,7 @@ Same as above to create a new entry. We take benefit of the Pycharm macro to pas
   * _Ouput filter_ : leave empty
     
 
+# Extra IntelliJ/Pycharm information
+We strongly advise you to have a look to :
+ * [IntelliJ-Luanalysis](https://github.com/Benjamin-Dobell/IntelliJ-Luanalysis)
+ * [tts-types](https://github.com/Benjamin-Dobell/tts-types)
