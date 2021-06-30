@@ -1,13 +1,13 @@
 # generic-ide-tabletopsimulator
-A generic IDE connector for Tabletop Simulator - using Python
+A generic IDE Connector for Tabletop Simulator - using Python
 
 # How to install
-Currently no pip install.
+
 You need to :
- * checkout the git repo
+ * Checkout the git repo
  * Install [Python](https://www.python.org/downloads/), [nodejs](https://nodejs.org/en/download/) and [yarn](https://classic.yarnpkg.com/en/docs/install/#windows-stable)
- * Create a virtualenv
- * While your virtualenv is active  
+ * _optional_ [Create a python virtualenv](https://docs.python.org/3/library/venv.html)
+ * With your virtualenv is active  
  ```
  cd generic-ide-tabletopsimulator
  pip install -r requirements.txt
@@ -27,7 +27,7 @@ python -u server.py --output-dir=path_to_your_project/fromtts
  * Tip : Use a fromtts subfolder in your code source project
  * Optionaly the script takes a --lib-dirs argument if you want to override where to search for requires/includes 
 
-### With PyCharm :
+### With IntelliJ / PyCharm :
 Create an External tool item : 
 
  * In _File > Settings_
@@ -58,7 +58,11 @@ since you'll have to launch it each time you start working on your project
  * _Navigation bar toolbar_
  * Press add, and search inside External tools, Tabletop Simulator section the TTS Server.
 
-## The actions part
+
+Also if you are using Windows, the default console encoding might be wrong.  
+Go in _File > Settings_ and then _Editor > General > Console_ and make sure the default encoding is set to UTF-8
+
+## The actions commands
 Actions are scripts that will request various things to TTS embedded server, 
 results of these actions will be collected by the IDE server started in the previous step.
 
