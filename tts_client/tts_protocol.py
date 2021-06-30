@@ -166,7 +166,8 @@ async def tts_query(command, host="127.0.0.1", port=39999, ide_port=39998, **kwa
     wait_file_path = None
     if command == "pull" and export_dir:
         wait_file_path = os.path.join(export_dir, RELOAD_FILE)
-        os.remove(wait_file_path)
+        if os.path.exists(wait_file_path):
+            os.remove(wait_file_path)
 
     message, (reader, writer) = await asyncio.gather(
         request_func(**kwargs, ide_com=ide_com), connect_task
