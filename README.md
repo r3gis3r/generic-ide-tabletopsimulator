@@ -45,12 +45,12 @@ Create an External tool item :
     --output-dir "<path_to_your_project>\fromtts"
     ```
   * _Synchronize files after exec_ : False
-  * _Open console for tool output_ : True
-  * _Make console active on stdout_ : True
+  * _Open console for tool output_ : **True**
+  * _Make console active on stdout_ : **True**
   * _Make console active on stdout_ : False
   * _Ouput filter_ : `$FILE_PATH$:$LINE$:.*`   
 
-In addition to that, we advise to create a shortcut for that in your toolbar
+In addition to that, we advise to create a _shortcut_ for that in your toolbar
 since you'll have to launch it each time you start working on your project
 
  * In _File > Settings_
@@ -155,3 +155,8 @@ Same as above to create a new entry. We take benefit of the Pycharm macro to pas
 We strongly advise you to have a look to :
  * [IntelliJ-Luanalysis](https://github.com/Benjamin-Dobell/IntelliJ-Luanalysis)
  * [tts-types](https://github.com/Benjamin-Dobell/tts-types)
+
+# Extra TTS Information
+If you are working on TTS plugin, we strongly advise you to visit :  
+[https://tts-community.github.io/](https://tts-community.github.io/)   
+there is a lot of useful resources in this website and also other IDE integrations if this one doesn't fit your needs :)
