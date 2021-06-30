@@ -169,7 +169,7 @@ def _handle_custom_message(message: dict, *_, **__):
 
 
 def _handle_save(message: dict, *_, **__):
-    log.info("TTS saves %s", message.get("savePath"))
+    log.debug("TTS saves %s", message.get("savePath"))
 
 
 def _handle_lua_response(message: dict, *_, **__):

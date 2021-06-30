@@ -64,21 +64,27 @@ async def bundle(source_file, include_folders=None, bundle_cb=None):
     return bundle_res
 
 
-def unbundle(data):
-    command = [get_binary(), "unbundle"]
-    out = subprocess.run(command, capture_output=True, input=data, encoding="utf-8")
+def get_unbundle_result(out, fallback=None):
+
     if out.returncode != 0:
-        log.error(out.stderr)
-        return data
+        error_msg = out.stderr.decode()
+        if "No metadata found" in error_msg:
+            log.debug(out.stderr)
+        else:
+            log.error(out.stderr)
+        return fallback
     else:
         return out.stdout
+
+
+def unbundle(data):
+    command = [get_binary(), "unbundle"]
+    out = subprocess.run(command, capture_output=True, input=data)
+    return get_unbundle_result(out, fallback=data)
 
 
 def unbundle_file(filepath):
     command = [get_binary(), "unbundle", filepath]
     out = subprocess.run(command, capture_output=True)
-    if out.returncode != 0:
-        log.error(out.stderr)
-        return None
-    else:
-        return out.stdout
+
+    return get_unbundle_result(out, fallback=None)
