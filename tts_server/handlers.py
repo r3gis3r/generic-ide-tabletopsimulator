@@ -44,7 +44,7 @@ def _handle_push_new_object(message: dict, export_dir=None, *_, **__):
         except:
             log.error("Failed to reload script states", exc_info=True)
 
-    _import_script_states(script_states, export_dir=export_dir, create_empty_files=True)
+    _import_script_states(script_states, export_dir=export_dir)
 
     for item in script_states:
         script_name = get_export_filename(item, key="script")
@@ -84,14 +84,12 @@ def _handle_load_new_game(message: dict, *_, export_dir=None, **__):
     # log.info("Should load game %s in %s", message, project_dir)
 
 
-def _import_script_states(script_states, export_dir, create_empty_files=False):
+def _import_script_states(script_states, export_dir):
     with tempfile.TemporaryDirectory(prefix="tts_") as tmpdir:
         for item in script_states:
             for extension, key in [("ttslua", "script"), ("xml", "ui")]:
                 data = item.get(key)
-                dont_create = not data
-                if create_empty_files:
-                    dont_create = data is None
+                dont_create = data is None
                 if dont_create:
                     continue
 
