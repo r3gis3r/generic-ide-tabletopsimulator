@@ -19,6 +19,7 @@ from tts_lua.constants import (
     TTS_MSG_ERROR,
     TTS_MSG_SAVE,
     TTS_IDE_MSG_PROGRESS,
+    TTS_MSG_RESPONSE_LUA,
 )
 from tts_lua.luabundler import unbundle_file
 from tts_server.progress_bar import print_progress_bar
@@ -38,9 +39,7 @@ def _handle_push_new_object(message: dict, export_dir=None, *_, **__):
         try:
             with open(script_states_save, "rb") as fp:
                 existing_script_states = json.load(fp)
-            existing_script_by_guid = {
-                it["guid"]: it for it in existing_script_states
-            }
+            existing_script_by_guid = {it["guid"]: it for it in existing_script_states}
         except:
             log.error("Failed to reload script states", exc_info=True)
 
@@ -173,6 +172,10 @@ def _handle_save(message: dict, *_, **__):
     log.info("TTS saves %s", message.get("savePath"))
 
 
+def _handle_lua_response(message: dict, *_, **__):
+    print("Execution response :", message.get("returnValue"))
+
+
 def _handle_progress(message: dict, *_, **__):
     print_progress_bar(**message)
 
@@ -183,6 +186,7 @@ MESSAGES_HANDLERS = {
     TTS_MSG_PRINT: _handle_print,
     TTS_MSG_ERROR: _handle_error,
     TTS_MSG_SAVE: _handle_save,
+    TTS_MSG_RESPONSE_LUA: _handle_lua_response,
     TTS_IDE_MSG_PROGRESS: _handle_progress,
 }
 

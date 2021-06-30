@@ -31,7 +31,13 @@ async def run(cmd, collect_cb=None):
     result = None
     success = False
     if proc.returncode != 0:
-        log.error(proc.stderr.decode())
+        error_msg = await proc.stderr.read()
+        log.error(
+            "Error running command %s code %s message %s",
+            cmd,
+            proc.returncode,
+            error_msg.decode(),
+        )
     else:
         success = True
         result = stdout

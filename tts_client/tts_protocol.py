@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import time
 from functools import partial
 
@@ -12,7 +13,7 @@ from tts_folder.export_dir import (
     RELOAD_FILE,
     get_libs_dirs,
 )
-from tts_lua.constants import TTS_IDE_MSG_PROGRESS
+from tts_lua.constants import TTS_IDE_MSG_PROGRESS, TTS_MSG_EXEC_LUA, TTS_MESSAGE_ID
 from tts_lua.luabundler import bundle
 
 log = logging.getLogger("ttsclient")
@@ -25,7 +26,7 @@ async def _command_progress(
         return
     await ide_com.send(
         {
-            "messageID": TTS_IDE_MSG_PROGRESS,
+            TTS_MESSAGE_ID: TTS_IDE_MSG_PROGRESS,
             "iteration": iteration,
             "total": total,
             "prefix": prefix,
@@ -111,11 +112,11 @@ async def request_command_push(
     with open(state_file, "w") as fp:
         json.dump(old_script_states, fp, indent=4)
 
-    return {"messageID": 1, "scriptStates": script_states}
+    return {TTS_MESSAGE_ID: 1, "scriptStates": script_states}
 
 
 async def request_command_pull(*_, **__):
-    return {"messageID": 0}
+    return {TTS_MESSAGE_ID: 0}
 
 
 async def request_command_error(command=None, *_, **__):
@@ -190,3 +191,59 @@ async def tts_query(command, host="127.0.0.1", port=39999, ide_port=39998, **kwa
     if wait_file_path:
         await wait_for_file(wait_file_path)
     print("Took ", time.time() - t0)
+
+
+async def tts_inject_snippet(
+    file_path,
+    host="127.0.0.1",
+    port=39999,
+    ide_port=39998,
+    lib_dirs=None,
+    **kwargs,
+):
+    lib_dirs = get_libs_dirs(lib_dirs)
+    ide_com = IDECommunication(host=host, port=ide_port)
+    await _command_progress(
+        ide_com,
+        iteration=0,
+        total=100,
+        prefix="Running snippet",
+        suffix="Prepare",
+    )
+    reader, writer = await connect_to_tts_server(host=host, port=port)
+    on_guid = "-1"
+
+    # Parse GUID
+    with open(file_path, "r") as fp:
+        file_text = fp.read()
+    guid_match = re.match(r"^-- FOR_GUID : (.+)$", file_text, re.MULTILINE)
+    if guid_match:
+        print("Using guid ", guid_match.group(1))
+        on_guid = guid_match.group(1)
+
+    snippet = await bundle(file_path, include_folders=lib_dirs)
+    if snippet is None:
+        snippet = file_text
+    else:
+        snippet = snippet.decode()
+    print(snippet)
+    message = {
+        TTS_MESSAGE_ID: TTS_MSG_EXEC_LUA,
+        "guid": on_guid,
+        "script": snippet,
+        "returnID": int(time.time()),
+    }
+    json_msg = json.dumps(message).encode()
+    writer.write(json_msg)
+    await writer.drain()
+
+    log.debug("Close the connection")
+    writer.close()
+    await writer.wait_closed()
+    await _command_progress(
+        ide_com,
+        iteration=100,
+        total=100,
+        prefix="Running snippet",
+        suffix=f"Complete",
+    )

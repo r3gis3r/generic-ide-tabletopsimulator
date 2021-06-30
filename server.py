@@ -9,8 +9,9 @@ import sys
 from tts_lua.yarn_installer import yarn_check_install
 from tts_server import tts_serve
 
-sys.stdout.reconfigure(encoding='utf-8')
-sys.stderr.reconfigure(encoding='utf-8')
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")
+
 
 def _get_argparser():
     parser = argparse.ArgumentParser(description="Tabletop Simulator Dev server")
@@ -24,7 +25,7 @@ def _get_argparser():
         "--dont-check-yarn",
         type=bool,
         help="Don't check yarn package version at startup",
-        default=False,
+        default=True,
         required=False,
     )
     parser.add_argument(
