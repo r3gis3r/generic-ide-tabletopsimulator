@@ -108,6 +108,13 @@ Same as for pull, but replace `pull` with `push` in the command line
 ### Snippet exec
 This allows you to run lua files directly on TTS without having any object nor modifying objects scripts.
 
+You can create your own snippet/scratches files and run them in the context of TTS.  
+In order to make a script run in the context of one particular objects : 
+ * Copy the object GUID from TTS
+ * Add the following line in your lua snippet file :   
+`-- FOR_GUID : 892585`   
+   _where 892585 is the guid of the object you want to run the script for_
+   
 #### No IDE / Manual config
 The command looks like that :
 ```
