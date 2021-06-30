@@ -100,6 +100,8 @@ For this one, we advise you to bind a keymap.
  * open it until you get the added items, and right click + add keyboard shortcut.
  * If you are used to Atom plugin, just use Ctrl+Shift+L
 
+---
+
 ### Push action
 #### No IDE / Manual config
 The command looks like that :
@@ -108,6 +110,8 @@ python command.py --output-dir path_to_your_project/fromtts --command push
 ```
 #### IntelliJ / Pycharm config
 Same as for pull, but replace `pull` with `push` in the command line
+
+---
 
 ### Snippet exec
 This allows you to run lua files directly on TTS without having any object nor modifying objects scripts.
