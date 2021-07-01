@@ -47,7 +47,6 @@ def _get_file_dependancies(
         processed_in_branch = set()
     if file_path in processed_in_branch:
         return set()
-    print(">> ", file_path)
     all_deps = set()
     with open(file_path, "r", encoding="utf-8") as fp:
         for m in REQUIRE_PATTERN.finditer(fp.read()):
@@ -66,7 +65,6 @@ def _get_file_dependancies(
             )
             processed_in_branch.add(required_path)
     file_dependancies[file_path] = all_deps
-    print("all_deps ", file_path, all_deps)
     return all_deps
 
 
