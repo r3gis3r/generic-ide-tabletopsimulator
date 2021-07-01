@@ -200,7 +200,9 @@ def _import_script_states(script_states, export_dir):
                 if dont_create:
                     continue
 
-                data = data or ""
+                if isinstance(data, str):
+                    data = data.encode("utf-8")
+                data = data or b""
 
                 # Final file name
                 filename = get_export_filename(item, key=key)
@@ -208,14 +210,15 @@ def _import_script_states(script_states, export_dir):
                 # In case of script, unbundle it through temp dir
                 if data and key == "script":
                     temp_target_file = os.path.join(tmpdir, filename)
-                    with open(temp_target_file, "w", encoding="utf-8") as fp:
+                    with open(temp_target_file, "wb") as fp:
                         fp.write(data)
                     new_data = unbundle_file(temp_target_file)
                     if new_data:
-                        data = new_data
+                        data = new_data.decode("utf-8").rstrip() + "\n"
+                        data = data.encode("utf-8")
                 # Export the final file
                 target_file = os.path.join(export_dir, filename)
-                with open(target_file, "w", encoding="utf-8") as fp:
+                with open(target_file, "wb") as fp:
                     fp.write(data)
 
 
