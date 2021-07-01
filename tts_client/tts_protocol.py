@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import json
 import logging
 import os
@@ -147,18 +148,57 @@ async def connect_to_tts_server(host, port):
     return reader, writer
 
 
-async def tts_query(command, host="127.0.0.1", port=39999, ide_port=39998, **kwargs):
-    t0 = time.time()
-    ide_com = IDECommunication(host=host, port=ide_port)
-    await _command_progress(
-        ide_com,
-        iteration=0,
-        total=100,
-        prefix="Pushing files",
-        suffix="Prepare",
-    )
+async def _clean_close(writer):
+    await writer.drain()
+    writer.close()
+    await writer.wait_closed()
 
-    connect_task = asyncio.create_task(connect_to_tts_server(host=host, port=port))
+
+def client_command(prefix=None, auto_complete=True):
+    def wrapper(func):
+        @functools.wraps(func)
+        async def wrapped(
+            *args, host="127.0.0.1", port=39999, ide_port=39998, lib_dirs=None, **kwargs
+        ):
+            # Some fancy foo stuff
+            ide_com = IDECommunication(host=host, port=ide_port)
+            await _command_progress(
+                ide_com,
+                iteration=0,
+                total=100,
+                prefix=prefix,
+                suffix="Prepare",
+            )
+            connect_task = asyncio.create_task(
+                connect_to_tts_server(host=host, port=port)
+            )
+
+            res = await func(
+                *args,
+                connect_task=connect_task,
+                ide_com=ide_com,
+                lib_dirs=get_libs_dirs(lib_dirs),
+                **kwargs,
+            )
+            if auto_complete:
+                await _command_progress(
+                    ide_com,
+                    iteration=100,
+                    total=100,
+                    prefix=prefix,
+                    suffix="Complete",
+                )
+
+            return res
+
+        return wrapped
+
+    return wrapper
+
+
+@client_command(prefix="Sync files", auto_complete=False)
+async def tts_query(command, connect_task, ide_com, lib_dirs=None, **kwargs):
+    t0 = time.time()
 
     request_func = REQUESTS_COMMANDS.get(
         command, partial(request_command_error, command=command)
@@ -173,13 +213,8 @@ async def tts_query(command, host="127.0.0.1", port=39999, ide_port=39998, **kwa
     message, (reader, writer) = await asyncio.gather(
         request_func(**kwargs, ide_com=ide_com), connect_task
     )
-    json_msg = json.dumps(message).encode()
-    writer.write(json_msg)
-    await writer.drain()
-
-    log.debug("Close the connection")
-    writer.close()
-    await writer.wait_closed()
+    writer.write(json.dumps(message).encode())
+    await _clean_close(writer)
 
     await _command_progress(
         ide_com,
@@ -193,24 +228,14 @@ async def tts_query(command, host="127.0.0.1", port=39999, ide_port=39998, **kwa
     print("Took ", time.time() - t0)
 
 
+@client_command(prefix="Running snippet")
 async def tts_inject_snippet(
     file_path,
-    host="127.0.0.1",
-    port=39999,
-    ide_port=39998,
+    connect_task,
     lib_dirs=None,
-    **kwargs,
+    **_,
 ):
-    lib_dirs = get_libs_dirs(lib_dirs)
-    ide_com = IDECommunication(host=host, port=ide_port)
-    await _command_progress(
-        ide_com,
-        iteration=0,
-        total=100,
-        prefix="Running snippet",
-        suffix="Prepare",
-    )
-    reader, writer = await connect_to_tts_server(host=host, port=port)
+    reader, writer = await connect_task
     on_guid = "-1"
 
     # Parse GUID
@@ -222,28 +247,53 @@ async def tts_inject_snippet(
         on_guid = guid_match.group(1)
 
     snippet = await bundle(file_path, include_folders=lib_dirs)
-    if snippet is None:
-        snippet = file_text
-    else:
-        snippet = snippet.decode()
-    print(snippet)
+    snippet = file_text if snippet is None else snippet.decode()
     message = {
         TTS_MESSAGE_ID: TTS_MSG_EXEC_LUA,
         "guid": on_guid,
         "script": snippet,
         "returnID": int(time.time()),
     }
-    json_msg = json.dumps(message).encode()
-    writer.write(json_msg)
-    await writer.drain()
+    writer.write(json.dumps(message).encode())
+    await _clean_close(writer)
 
-    log.debug("Close the connection")
-    writer.close()
-    await writer.wait_closed()
-    await _command_progress(
-        ide_com,
-        iteration=100,
-        total=100,
-        prefix="Running snippet",
-        suffix=f"Complete",
-    )
+
+@client_command(prefix="Push object")
+async def tts_push_object(
+    file_path,
+    object,
+    connect_task,
+    lib_dirs=None,
+    **_,
+):
+    reader, writer = await connect_task
+
+    updated_code = await bundle(file_path, include_folders=lib_dirs)
+    if updated_code is None:
+        with open(file_path, "r", encoding="utf-8") as fp:
+            updated_code = fp.read()
+    else:
+        updated_code = updated_code.decode()
+
+    # print(object, updated_code)
+    snippet = f"""
+local obj = getObjectFromGUID("{object}")
+if obj == nil then
+return "Not found {object}"
+else
+local new_code = [[{updated_code}]]
+obj.setLuaScript(new_code)
+obj.reload()
+return "Updated {object}"
+end
+    """
+    print("Sending")
+    print(snippet)
+    message = {
+        TTS_MESSAGE_ID: TTS_MSG_EXEC_LUA,
+        "guid": "-1",
+        "script": snippet,
+        "returnID": int(time.time()),
+    }
+    writer.write(json.dumps(message).encode())
+    await _clean_close(writer)
