@@ -7,33 +7,18 @@ import re
 import time
 from functools import partial
 
-from tts_client.direct_ide import IDECommunication
+from tts_client.direct_ide import IDECommunication, command_progress
+from tts_client.patcher import request_patch_object, request_command_soft_push
 from tts_folder.export_dir import (
     get_script_state_path,
     get_export_filename,
     RELOAD_FILE,
     get_libs_dirs,
 )
-from tts_lua.constants import TTS_IDE_MSG_PROGRESS, TTS_MSG_EXEC_LUA, TTS_MESSAGE_ID
+from tts_lua.constants import TTS_MSG_EXEC_LUA, TTS_MESSAGE_ID
 from tts_lua.luabundler import bundle
 
 log = logging.getLogger("ttsclient")
-
-
-async def _command_progress(
-    ide_com, iteration=0, total=100, prefix="", suffix="Prepare"
-):
-    if not ide_com:
-        return
-    await ide_com.send(
-        {
-            TTS_MESSAGE_ID: TTS_IDE_MSG_PROGRESS,
-            "iteration": iteration,
-            "total": total,
-            "prefix": prefix,
-            "suffix": suffix,
-        }
-    )
 
 
 async def fill_bundle_script_item(
@@ -55,7 +40,6 @@ async def request_command_push(
 ):
     state_file = get_script_state_path(export_dir=export_dir)
     script_states = []
-    lib_dirs = get_libs_dirs(lib_dirs)
     with open(state_file, "rb") as fp:
         old_script_states = json.loads(fp.read())
 
@@ -65,7 +49,7 @@ async def request_command_push(
     current_progress_state = {"iteration": 1}
 
     async def progress_cb(success):
-        await _command_progress(
+        await command_progress(
             ide_com,
             iteration=current_progress_state["iteration"],
             total=progress_len,
@@ -103,7 +87,7 @@ async def request_command_push(
         script_states.append(item)
     await asyncio.gather(*all_tasks)
     log.info("Requesting push")
-    await _command_progress(
+    await command_progress(
         ide_com,
         iteration=progress_len - sending_progress,
         total=progress_len,
@@ -124,7 +108,11 @@ async def request_command_error(command=None, *_, **__):
     raise ValueError(f"Command {command} not recognized")
 
 
-REQUESTS_COMMANDS = {"push": request_command_push, "pull": request_command_pull}
+REQUESTS_COMMANDS = {
+    "push": request_command_push,
+    "pull": request_command_pull,
+    "soft_push": request_command_soft_push,
+}
 
 
 async def wait_for_file(file_path, sleep_step=0.2, max_sleep=40):
@@ -162,7 +150,7 @@ def client_command(prefix=None, auto_complete=True):
         ):
             # Some fancy foo stuff
             ide_com = IDECommunication(host=host, port=ide_port)
-            await _command_progress(
+            await command_progress(
                 ide_com,
                 iteration=0,
                 total=100,
@@ -181,7 +169,7 @@ def client_command(prefix=None, auto_complete=True):
                 **kwargs,
             )
             if auto_complete:
-                await _command_progress(
+                await command_progress(
                     ide_com,
                     iteration=100,
                     total=100,
@@ -197,7 +185,7 @@ def client_command(prefix=None, auto_complete=True):
 
 
 @client_command(prefix="Sync files", auto_complete=False)
-async def tts_query(command, connect_task, ide_com, lib_dirs=None, **kwargs):
+async def tts_query(command, connect_task, ide_com, **kwargs):
     t0 = time.time()
 
     request_func = REQUESTS_COMMANDS.get(
@@ -216,7 +204,7 @@ async def tts_query(command, connect_task, ide_com, lib_dirs=None, **kwargs):
     writer.write(json.dumps(message).encode())
     await _clean_close(writer)
 
-    await _command_progress(
+    await command_progress(
         ide_com,
         iteration=100,
         total=100,
@@ -264,36 +252,16 @@ async def tts_push_object(
     object,
     connect_task,
     lib_dirs=None,
+    export_dir=None,
     **_,
 ):
     reader, writer = await connect_task
-
-    updated_code = await bundle(file_path, include_folders=lib_dirs)
-    if updated_code is None:
-        with open(file_path, "r", encoding="utf-8") as fp:
-            updated_code = fp.read()
-    else:
-        updated_code = updated_code.decode()
-
-    # print(object, updated_code)
-    snippet = f"""
-local obj = getObjectFromGUID("{object}")
-if obj == nil then
-return "Not found {object}"
-else
-local new_code = [[{updated_code}]]
-obj.setLuaScript(new_code)
-obj.reload()
-return "Updated {object}"
-end
-    """
-    print("Sending")
-    print(snippet)
-    message = {
-        TTS_MESSAGE_ID: TTS_MSG_EXEC_LUA,
-        "guid": "-1",
-        "script": snippet,
-        "returnID": int(time.time()),
-    }
+    message = await request_patch_object(
+        guid=object,
+        file_path=file_path,
+        lib_dirs=lib_dirs,
+        export_dir=export_dir,
+        do_return=True,
+    )
     writer.write(json.dumps(message).encode())
     await _clean_close(writer)

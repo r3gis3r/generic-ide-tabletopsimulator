@@ -2,6 +2,8 @@ import asyncio
 import json
 import logging
 
+from tts_lua.constants import TTS_MESSAGE_ID, TTS_IDE_MSG_PROGRESS
+
 log = logging.getLogger(__name__)
 
 
@@ -30,3 +32,19 @@ class IDECommunication(object):
             await writer.drain()
             writer.close()
             await writer.wait_closed()
+
+
+async def command_progress(
+    ide_com, iteration=0, total=100, prefix="", suffix="Prepare"
+):
+    if not ide_com:
+        return
+    await ide_com.send(
+        {
+            TTS_MESSAGE_ID: TTS_IDE_MSG_PROGRESS,
+            "iteration": iteration,
+            "total": total,
+            "prefix": prefix,
+            "suffix": suffix,
+        }
+    )

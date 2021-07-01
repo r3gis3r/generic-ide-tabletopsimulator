@@ -1,8 +1,6 @@
 import argparse
 import asyncio
-import glob
 import logging
-import os
 
 from tts_client.tts_protocol import tts_push_object
 
@@ -37,18 +35,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
 
     # snippet = args.selected_text
-    file_path = args.file
-    if not file_path and "tags:" not in args.object:
-        search_pattern = os.path.join(args.output_dir, f"*-{args.object}.ttslua")
-        candidates = glob.glob(search_pattern)
-        if candidates:
-            file_path = candidates[0]
-            print(file_path)
-    if not file_path:
-        raise ValueError("File path not found")
     asyncio.run(
         tts_push_object(
-            file_path=file_path,
+            file_path=args.file,
             object=args.object,
             export_dir=args.output_dir,
             lib_dirs=args.libdir,

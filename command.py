@@ -18,7 +18,7 @@ def _get_argparser():
     parser.add_argument(
         "--command",
         type=str,
-        choices=("push", "pull"),
+        choices=("push", "pull", "soft_push"),
         help="Command to perform",
         required=True,
     )

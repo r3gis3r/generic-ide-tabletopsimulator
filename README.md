@@ -1,11 +1,20 @@
 # generic-ide-tabletopsimulator
 A generic IDE Connector for Tabletop Simulator - using Python
 
+# Features
+ * Pull files from TTS
+ * Push files with save and reload to TTS
+ * Print messages from TTS
+ * Print errors with links to required files and code line.
+ * Launch code snippet files on global or objects
+ * :star2: Hot reload of a single object : **way faster**, without save&reload
+ * :star2: Hot reload of modified objects only (WIP)
+
 # How to install
 
 You need to :
  * Checkout the git repo
- * Install [Python](https://www.python.org/downloads/), [nodejs](https://nodejs.org/en/download/) and [yarn](https://classic.yarnpkg.com/en/docs/install/#windows-stable)
+ * Install [Python](https://www.python.org/downloads/) (3.8+), [nodejs](https://nodejs.org/en/download/) and [yarn](https://classic.yarnpkg.com/en/docs/install/#windows-stable)
  * _optional_ [Create a python virtualenv](https://docs.python.org/3/library/venv.html)
  * With your virtualenv is active  
  ```
@@ -150,6 +159,33 @@ Same as above to create a new entry. We take benefit of the Pycharm macro to pas
   * _Make console active on stdout_ : False
   * _Ouput filter_ : leave empty
     
+---
+
+### Hot reload one object
+
+#### No IDE / Manual config
+The command looks like that :
+```
+python object_patcher.py --output-dir path_to_your_project/fromtts --object <the_object_guid>
+```
+
+#### IntelliJ / Pycharm config
+Here we advise to configure a run profile that is easier to modify.   
+Just configure it to run the command of manual config above.
+
+---
+### Hot reload all updated objects
+
+#### No IDE / Manual config
+The command looks like that :
+```
+python command.py --output-dir path_to_your_project/fromtts --command soft_push
+```
+
+#### IntelliJ / Pycharm config
+Same as push/pull advised
+
+---
 
 # Extra IntelliJ/Pycharm information
 We strongly advise you to have a look to :

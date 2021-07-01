@@ -29,6 +29,13 @@ def _get_argparser():
         required=False,
     )
     parser.add_argument(
+        "--track-files",
+        type=bool,
+        help="Let the server track file tree and modification times. Necessary to use light push",
+        default=True,
+        required=False,
+    )
+    parser.add_argument(
         "--libdir", help="Path to search for ttslua libs", action="append"
     )
 
@@ -39,10 +46,6 @@ def _get_argparser():
 
 
 if __name__ == "__main__":
-
-    # sys.stdin.reconfigure(encoding='utf-8')
-    # sys.stdout.reconfigure(encoding='utf-8')
-
     parser = _get_argparser()
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
@@ -54,4 +57,4 @@ if __name__ == "__main__":
         yarn_check_install()
 
     logging.debug("Starting")
-    asyncio.run(tts_serve(export_dir=args.output_dir, lib_dirs=args.libdir))
+    asyncio.run(tts_serve(export_dir=args.output_dir, lib_dirs=args.libdir, track_files=args.track_files))
