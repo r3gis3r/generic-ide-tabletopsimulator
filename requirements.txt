@@ -2,3 +2,4 @@ pip==21.1.2
 setuptools==57.0.0
 # black
 pynpm==0.1.2
+websockets==9.1

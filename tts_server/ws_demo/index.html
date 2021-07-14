@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket connection</title>
+    <style type="text/css">
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        .buttons {
+            padding: 15px;
+            flex: 0 0 auto;
+        }
+
+        .logs {
+            flex: 1 1;
+            overflow: auto;
+        }
+
+    </style>
+</head>
+<body>
+<div class="buttons">
+    <button id="sample">Send sample</button>
+</div>
+<div class="logs" id="logs">
+</div>
+<script>
+    const websocket = new WebSocket("ws://127.0.0.1:6789/"),
+        logs = document.getElementById("logs"),
+        sample = document.getElementById("sample")
+    ;
+    sample.onclick = function (event) {
+        websocket.send(JSON.stringify({
+            messageID: 3,
+            guid: "-1",
+            script: "print(\"Hello, World\")"
+        }));
+    }
+    websocket.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        const newItem = document.createElement("pre")
+        newItem.textContent = event.data
+        logs.append(newItem)
+        logs.scrollTop = logs.scrollHeight
+    };
+</script>
+</body>
+</html>

@@ -36,6 +36,13 @@ def _get_argparser():
         required=False,
     )
     parser.add_argument(
+        "--ws-port",
+        type=int,
+        help="Additional websocket proxy to TTS",
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
         "--libdir", help="Path to search for ttslua libs", action="append"
     )
 
@@ -57,4 +64,4 @@ if __name__ == "__main__":
         yarn_check_install()
 
     logging.debug("Starting")
-    asyncio.run(tts_serve(export_dir=args.output_dir, lib_dirs=args.libdir, track_files=args.track_files))
+    asyncio.run(tts_serve(export_dir=args.output_dir, lib_dirs=args.libdir, track_files=args.track_files, websocket_port=args.ws_port))
